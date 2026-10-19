@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Julebrus-Teller & Rank</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-red: #c0392b;
+      --dark-red: #8e1b1b;
+      --accent-gold: #f39c12;
+      --soft-gold: #f1c40f;
+      --deep-green: #1b4332;
+      --snow-white: #f8f9fa;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      --font-title: 'Mountains of Christmas', cursive;
+      --font-body: 'Fredoka', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: linear-gradient(135deg, #2c0e0e 0%, #0d1f18 100%);
+      color: #333;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    #snow-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    header {
+      text-align: center;
+      color: var(--snow-white);
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    header h1 {
+      font-family: var(--font-title);
+      font-size: 3.5rem;
+      color: var(--accent-gold);
+      letter-spacing: 1px;
+    }
+
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: var(--shadow);
+      margin-bottom: 25px;
+      border: 2px solid var(--accent-gold);
+    }
+
+    /* Rank & Stats Dashboard */
+    .dashboard {
+      text-align: center;
+      background: linear-gradient(135deg, #fff 0%, #fff8e7 100%);
+    }
+
+    .rank-badge {
+      display: inline-block;
+      background: linear-gradient(45deg, var(--dark-red), var(--primary-red));
+      color: white;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-top: 10px;
+      box-shadow: 0 4px 10px rgba(192, 57, 43, 0.4);
+      border: 2px solid var(--accent-gold);
+    }
+
+    .main-counter {
+      font-size: 4rem;
+      font-weight: 700;
+      color: var(--dark-red);
+      line-height: 1;
+      margin: 15px 0 5px;
+    }
+
+    .main-counter-label {
+      font-size: 1.1rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px dashed #ccc;
+    }
+
+    .stat-item {
+      background: rgba(240, 240, 240, 0.7);
+      padding: 10px;
+      border-radius: 12px;
+    }
+
+    .stat-item .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--deep-green);
+    }
+
+    .stat-item .label {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .progress-bar-container {
+      background: #e0e0e0;
+      border-radius: 10px;
+      height: 12px;
+      width: 100%;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, var(--soft-gold), var(--accent-gold));
+      height: 100%;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .next-rank-text {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    /* Search Bar Section */
+    .search-section {
+      text-align: center;
+    }
+
+    .search-title {
+      font-size: 1.4rem;
+      color: var(--dark-red);
+      margin-bottom: 15px;
+    }
+
+    .search-box {
+      position: relative;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 15px 20px 15px 45px;
+      font-size: 1.1rem;
+      font-family: inherit;
+      border: 2px solid var(--accent-gold);
+      border-radius: 30px;
+      outline: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-red);
+      box-shadow: 0 4px 15px rgba(192, 57, 43, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: #888;
+    }
+
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .tag-btn {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 15px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .tag-btn:hover {
+      background: var(--accent-gold);
+      color: white;
+      border-color: var(--accent-gold);
+    }
+
+    /* Results List */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .soda-card {
+      background: white;
+      border-radius: 15px;
+      padding: 15px;
+      border: 1px solid #eee;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: transform 0.2s;
+    }
+
+    .soda-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .soda-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .soda-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .soda-producer {
+      font-size: 0.9rem;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .soda-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+    }
+
+    .badge-red { background: #e74c3c; }
+    .badge-brown { background: #795548; }
+    .badge-zero { background: #27ae60; }
+
+    .soda-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .packaging-select {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pkg-btn {
+      background: #f8f9fa;
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .pkg-btn.active {
+      background: var(--dark-red);
+      color: white;
+      border-color: var(--dark-red);
+    }
+
+    .qty-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .qty-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      width: 24px;
+      text-align: center;
+    }
+
+    .add-btn {
+      background: linear-gradient(135deg, var(--deep-green), #2d6a4f);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition: transform 0.1s, background 0.2s;
+    }
+
+    .add-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* History & Reset */
+    .history-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      border-bottom: 1px dashed #eee;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .reset-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .reset-btn {
+      background: transparent;
+      color: #999;
+      border: 1px dashed #aaa;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .reset-btn:hover {
+      color: var(--primary-red);
+      border-color: var(--primary-red);
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: #888;
+      padding: 20px 0;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 2.5rem; }
+      .main-counter { font-size: 3rem; }
+      .soda-controls { flex-direction: column; align-items: stretch; }
+      .packaging-select { justify-content: space-between; }
+      .qty-picker { justify-content: center; }
+      .add-btn { width: 100%; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="snow-canvas"></canvas>
+
+  <div class="container">
+    <header>
+      <h1>🎄 Julebrus-Teller 🎅</h1>
+      <p>Søk opp produsenten din, velg type, og hold orden på julegleden!</p>
+    </header>
+
+    <!-- DASHBOARD & RANK -->
+    <div class="card dashboard">
+      <div class="main-counter" id="total-count">0</div>
+      <div class="main-counter-label">Julebrus Drukket</div>
+
+      <div>
+        <span class="rank-badge" id="rank-title">❄️ Skeptiker</span>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="next-rank-text" id="next-rank-text">Neste rank ved 3 brus</div>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="value" id="glass-count">0</div>
+          <div class="label">🍾 Glassflasker</div>
+        </div>
+        <div class="stat-item">
+          <div class="value" id="box-count">0</div>
+          <div class="label">🥫 Bokser</div>
+        </div>
+        <div class="stat-item">
+          <div class="value" id="plastic-count">0</div>
+          <div class="label">🥤 Plastflasker</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SØKEBAR PÅ MIDTEN -->
+    <div class="card search-section">
+      <h2 class="search-title">🔍 Finn din julebrus</h2>
+      <div class="search-box">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="search-input" class="search-input" placeholder="Søk produsent, merke eller farge (f.eks. Dahls, Hamar, Aass, Mack)...">
+      </div>
+      <div class="quick-tags">
+        <button class="tag-btn" onclick="quickSearch('Dahls')">Dahls</button>
+        <button class="tag-btn" onclick="quickSearch('Hamar')">Hamar & Lillehammer</button>
+        <button class="tag-btn" onclick="quickSearch('Grans')">Grans</button>
+        <button class="tag-btn" onclick="quickSearch('Mack')">Mack</button>
+        <button class="tag-btn" onclick="quickSearch('Aass')">Aass</button>
+        <button class="tag-btn" onclick="quickSearch('CB')">CB</button>
+        <button class="tag-btn" onclick="quickSearch('Rød')">Rød brus</button>
+        <button class="tag-btn" onclick="quickSearch('Brun')">Brun brus</button>
+      </div>
+
+      <!-- SØKERESULTATER -->
+      <div class="results-container" id="results-container"></div>
+    </div>
+
+    <!-- LOGG / HISTORIKK -->
+    <div class="card">
+      <h3>📜 Siste registrerte julebrus</h3>
+      <div class="history-list" id="history-list">
+        <div class="empty-msg">Ingen registreringer ennå. Søk og legg til over!</div>
+      </div>
+
+      <div class="reset-container">
+        <button class="reset-btn" onclick="resetData()">🗑️ Nullstill alle data</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- DATABASE OVER NORSKE JULEBRUS ---
+    const julebrusDatabase = [
+      { id: 1, name: "Dahls Julebrus", producer: "E.C. Dahls Bryggeri (Ringnes)", color: "Brun", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 2, name: "Dahls Julebrus Sukkerfri", producer: "E.C. Dahls Bryggeri (Ringnes)", color: "Brun", zero: true, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 3, name: "Hamar og Lillehammer Julebrus", producer: "Ringnes", color: "Brun", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 4, name: "Hamar og Lillehammer Julebrus Lettere", producer: "Ringnes", color: "Brun", zero: true, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 5, name: "Aass Julebrus", producer: "Aass Bryggeri", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 6, name: "Aass Julebrus Uten Sukker", producer: "Aass Bryggeri", color: "Rød", zero: true, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 7, name: "Grans Julebrus", producer: "Grans Bryggeri", color: "Rød", zero: false, packagings: ["Boks", "Plastflaske"] },
+      { id: 8, name: "Grans Julebrus X (Sukkerfri)", producer: "Grans Bryggeri", color: "Rød", zero: true, packagings: ["Boks", "Plastflaske"] },
+      { id: 9, name: "Grans Julebrus Kongens", producer: "Grans Bryggeri", color: "Brun", zero: false, packagings: ["Glassflaske", "Boks"] },
+      { id: 10, name: "Mack Julebrus", producer: "Mack Bryggeri", color: "Brun", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 11, name: "Mack Julebrus Sukkerfri", producer: "Mack Bryggeri", color: "Brun", zero: true, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 12, name: "CB Julebrus", producer: "Christianssands Bryggeri (Hansa Borg)", color: "Brun", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 13, name: "CB Julebrus Sukkerfri", producer: "Christianssands Bryggeri (Hansa Borg)", color: "Brun", zero: true, packagings: ["Boks", "Plastflaske"] },
+      { id: 14, name: "Hansa Julebrus", producer: "Hansa Borg Bryggerier", color: "Rød", zero: false, packagings: ["Boks", "Plastflaske"] },
+      { id: 15, name: "Hansa Julebrus Null Sukker", producer: "Hansa Borg Bryggerier", color: "Rød", zero: true, packagings: ["Boks", "Plastflaske"] },
+      { id: 16, name: "Borg Julebrus", producer: "Hansa Borg Bryggerier", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 17, name: "Borg Julebrus Unik Sukkerfri", producer: "Hansa Borg Bryggerier", color: "Rød", zero: true, packagings: ["Boks", "Plastflaske"] },
+      { id: 18, name: "Rudolf og Nissens Julebrus", producer: "Oskar Sylte", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 19, name: "Rudolf og Nissens Julebrus Sukkerfri", producer: "Oskar Sylte", color: "Rød", zero: true, packagings: ["Glassflaske", "Boks", "Plastflaske"] },
+      { id: 20, name: "Union Julebrus", producer: "Union Bryggeri", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks"] },
+      { id: 21, name: "Berentsens Julebrus", producer: "Berentsens Brygghus", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks"] },
+      { id: 22, name: "Berentsens Julebrus Sukkerfri", producer: "Berentsens Brygghus", color: "Rød", zero: true, packagings: ["Glassflaske", "Boks"] },
+      { id: 23, name: "Roma Rød Julebrus", producer: "Roma Mineralvannfabrikk", color: "Rød", zero: false, packagings: ["Glassflaske", "Plastflaske"] },
+      { id: 24, name: "Roma Brun Julebrus (Tradisjon)", producer: "Roma Mineralvannfabrikk", color: "Brun", zero: false, packagings: ["Glassflaske", "Plastflaske"] },
+      { id: 25, name: "Roma Julebrus Sukkerfri", producer: "Roma Mineralvannfabrikk", color: "Rød", zero: true, packagings: ["Plastflaske"] },
+      { id: 26, name: "Trio Julebrus", producer: "MACK / Trio", color: "Rød", zero: false, packagings: ["Glassflaske", "Boks"] },
+      { id: 27, name: "Sørlandsjulebrus", producer: "Sørlandschips / Roma", color: "Brun", zero: false, packagings: ["Boks", "Plastflaske"] }
+    ];
+
+    // --- RANKS DEFINISJON ---
+    const ranks = [
+      { min: 0, title: "❄️ Skeptiker", next: 3 },
+      { min: 3, title: "🥤 Julebrus-Nybegynner", next: 8 },
+      { min: 8, title: "🎅 Glad Julebrus-Drikker", next: 15 },
+      { min: 15, title: "🎄 Julebrus-Entusiast", next: 25 },
+      { min: 25, title: "👑 Julebrus-Mester", next: 40 },
+      { min: 40, title: "🌟 Norsk Julebrus-Legende", next: Infinity }
+    ];
+
+    // --- TILSTAND (STATE) ---
+    let userData = {
+      total: 0,
+      byPackaging: {
+        "Glassflaske": 0,
+        "Boks": 0,
+        "Plastflaske": 0
+      },
+      history: []
+    };
+
+    // Midlertidig valg i grensesnittet for hver brus i søkeresultatet
+    let selections = {};
+
+    // --- INITIALISERING ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalStorage();
+      initSnow();
+      renderDashboard();
+      renderHistory();
+      
+      // Vis noen populære brus i startvisningen
+      renderSearchResults(julebrusDatabase.slice(0, 4));
+
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        handleSearch(e.target.value);
+      });
+    });
+
+    // --- LAGRING ---
+    function saveLocalStorage() {
+      localStorage.setItem('julebrus_tracker_data', JSON.stringify(userData));
+    }
+
+    function loadLocalStorage() {
+      const saved = localStorage.getItem('julebrus_tracker_data');
+      if (saved) {
+        try {
+          userData = JSON.parse(saved);
+        } catch(e) {
+          console.error("Kunne ikke laste lagrede data", e);
+        }
+      }
+    }
+
+    function resetData() {
+      if (confirm("Er du sikker på at du vil nullstille alle tellere og historikk?")) {
+        userData = {
+          total: 0,
+          byPackaging: { "Glassflaske": 0, "Boks": 0, "Plastflaske": 0 },
+          history: []
+        };
+        saveLocalStorage();
+        renderDashboard();
+        renderHistory();
+      }
+    }
+
+    // --- SØKEFUNKSJON ---
+    function handleSearch(query) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        renderSearchResults(julebrusDatabase.slice(0, 4));
+        return;
+      }
+
+      const filtered = julebrusDatabase.filter(item => 
+        item.name.toLowerCase().includes(q) ||
+        item.producer.toLowerCase().includes(q) ||
+        item.color.toLowerCase().includes(q)
+      );
+
+      renderSearchResults(filtered);
+    }
+
+    function quickSearch(term) {
+      document.getElementById('search-input').value = term;
+      handleSearch(term);
+    }
+
+    // --- RENDERING AV SØKERESULTATER ---
+    function renderSearchResults(results) {
+      const container = document.getElementById('results-container');
+      container.innerHTML = '';
+
+      if (results.length === 0) {
+        container.innerHTML = `<div class="empty-msg">Ingen julebrus funnet for dette søket.<br>Prøv f.eks. "Dahls", "Ringnes", "Grans" eller "Rød".</div>`;
+        return;
+      }
+
+      results.forEach(soda => {
+        // Sett standardvalg om det ikke finnes fra før
+        if (!selections[soda.id]) {
+          selections[soda.id] = {
+            pkg: soda.packagings[0],
+            qty: 1
+          };
+        }
+
+        const currentSel = selections[soda.id];
+
+        const card = document.createElement('div');
+        card.className = 'soda-card';
+
+        const colorBadgeClass = soda.color === 'Rød' ? 'badge-red' : 'badge-brown';
+        const zeroBadge = soda.zero ? `<span class="badge badge-zero">Sukkerfri</span>` : '';
+
+        // Pakningsknapper HTML
+        const pkgButtons = soda.packagings.map(pkg => {
+          const activeClass = currentSel.pkg === pkg ? 'active' : '';
+          let icon = '🍾';
+          if (pkg === 'Boks') icon = '🥫';
+          if (pkg === 'Plastflaske') icon = '🥤';
+          return `<button class="pkg-btn ${activeClass}" onclick="setPackaging(${soda.id}, '${pkg}')">${icon} ${pkg}</button>`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="soda-header">
+            <div>
+              <div class="soda-title">${soda.name}</div>
+              <div class="soda-producer">${soda.producer}</div>
+            </div>
+            <div class="soda-tags">
+              <span class="badge ${colorBadgeClass}">${soda.color}</span>
+              ${zeroBadge}
+            </div>
+          </div>
+          <div class="soda-controls">
+            <div class="packaging-select">
+              ${pkgButtons}
+            </div>
+            <div class="qty-picker">
+              <button class="qty-btn" onclick="changeQty(${soda.id}, -1)">-</button>
+              <span class="qty-val">${currentSel.qty}</span>
+              <button class="qty-btn" onclick="changeQty(${soda.id}, 1)">+</button>
+            </div>
+            <button class="add-btn" onclick="addDrinks(${soda.id})">🥤 Drikk!</button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // --- KONTROLLSTYRING FOR SKJEMA ---
+    function setPackaging(sodaId, pkg) {
+      if (selections[sodaId]) {
+        selections[sodaId].pkg = pkg;
+        // Rerepresenter søkeresultatene for å oppdatere aktiv status
+        handleSearch(document.getElementById('search-input').value);
+      }
+    }
+
+    function changeQty(sodaId, delta) {
+      if (selections[sodaId]) {
+        let newQty = selections[sodaId].qty + delta;
+        if (newQty < 1) newQty = 1;
+        selections[sodaId].qty = newQty;
+        handleSearch(document.getElementById('search-input').value);
+      }
+    }
+
+    // --- LEGG TIL DRIKKE ---
+    function addDrinks(sodaId) {
+      const soda = julebrusDatabase.find(s => s.id === sodaId);
+      const sel = selections[sodaId];
+
+      if (!soda || !sel) return;
+
+      const count = sel.qty;
+      const pkg = sel.pkg;
+
+      userData.total += count;
+      userData.byPackaging[pkg] = (userData.byPackaging[pkg] || 0) + count;
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      userData.history.unshift({
+        name: soda.name,
+        producer: soda.producer,
+        pkg: pkg,
+        qty: count,
+        time: timeStr
+      });
+
+      // Begrens historikk til 20 elementer
+      if (userData.history.length > 20) userData.history.pop();
+
+      saveLocalStorage();
+      renderDashboard();
+      renderHistory();
+
+      // Tilbakestill antall til 1 etter registering
+      selections[sodaId].qty = 1;
+      handleSearch(document.getElementById('search-input').value);
+    }
+
+    // --- OPPDARE DASHBOARD OG RANK ---
+    function renderDashboard() {
+      document.getElementById('total-count').innerText = userData.total;
+      document.getElementById('glass-count').innerText = userData.byPackaging["Glassflaske"] || 0;
+      document.getElementById('box-count').innerText = userData.byPackaging["Boks"] || 0;
+      document.getElementById('plastic-count').innerText = userData.byPackaging["Plastflaske"] || 0;
+
+      // Finn nåværende rank
+      let currentRank = ranks[0];
+      let nextRank = ranks[1];
+
+      for (let i = 0; i < ranks.length; i++) {
+        if (userData.total >= ranks[i].min) {
+          currentRank = ranks[i];
+          nextRank = ranks[i + 1] || null;
+        }
+      }
+
+      document.getElementById('rank-title').innerText = currentRank.title;
+
+      const progressBar = document.getElementById('progress-bar');
+      const nextRankText = document.getElementById('next-rank-text');
+
+      if (nextRank && nextRank.next !== Infinity) {
+        const currentProgress = userData.total - currentRank.min;
+        const totalNeeded = currentRank.next - currentRank.min;
+        const percentage = Math.min(100, Math.max(0, (currentProgress / totalNeeded) * 100));
+
+        progressBar.style.width = percentage + '%';
+        const remaining = currentRank.next - userData.total;
+        nextRankText.innerText = `Neste rank (${nextRank.title.split(' ')[1]}) om ${remaining} brus!`;
+      } else {
+        progressBar.style.width = '100%';
+        nextRankText.innerText = 'Du har nådd øverste rank! Legendarisk! 🏆';
+      }
+    }
+
+    // --- RENDERING AV HISTORIKK ---
+    function renderHistory() {
+      const historyList = document.getElementById('history-list');
+      if (userData.history.length === 0) {
+        historyList.innerHTML = `<div class="empty-msg">Ingen registreringer ennå. Søk og legg til over!</div>`;
+        return;
+      }
+
+      historyList.innerHTML = userData.history.map(item => `
+        <div class="history-item">
+          <div>
+            <strong>${item.qty}x ${item.name}</strong> (${item.pkg})
+          </div>
+          <div style="color: #888;">${item.time}</div>
+        </div>
+      `).join('');
+    }
+
+    // --- SNØ-ANIMASJON (CANVAS) ---
+    function initSnow() {
+      const canvas = document.getElementById('snow-canvas');
+      const ctx = canvas.getContext('2d');
+
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const numFlakes = 60;
+      const flakes = [];
+
+      for (let i = 0; i < numFlakes; i++) {
+        flakes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * 3 + 1,
+          d: Math.random() * 1 + 0.5,
+          opacity: Math.random() * 0.7 + 0.3
+        });
+      }
+
+      function drawFlakes() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.beginPath();
+        for (let i = 0; i < numFlakes; i++) {
+          const f = flakes[i];
+          ctx.moveTo(f.x, f.y);
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+        }
+        ctx.fill();
+        moveFlakes();
+      }
+
+      let angle = 0;
+      function moveFlakes() {
+        angle += 0.01;
+        for (let i = 0; i < numFlakes; i++) {
+          const f = flakes[i];
+          f.y += Math.cos(angle + f.d) + 1 + f.r / 2;
+          f.x += Math.sin(angle) * 1;
+
+          if (f.x > width + 5 || f.x < -5 || f.y > height) {
+            flakes[i] = {
+              x: Math.random() * width,
+              y: -10,
+              r: f.r,
+              d: f.d,
+              opacity: f.opacity
+            };
+          }
+        }
+      }
+
+      setInterval(drawFlakes, 33);
+    }
+  </script>
+</body>
+</html>
